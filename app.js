@@ -922,7 +922,6 @@ function renderRealSizePreview() {
           charY += boxHeight;
         }
       }
-      }
       colX -= boxWidth;
     }
   } else {
