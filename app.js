@@ -619,31 +619,53 @@ function renderPreviewText() {
       for (let i = 0; i < line.length; i++) {
         const charCode = line.charCodeAt(i);
         const char = line[i];
-        // 縦書き用グリフに置換
-        const renderCode = VERTICAL_CHAR_MAP.has(charCode) && glyphs.has(VERTICAL_CHAR_MAP.get(charCode))
-          ? VERTICAL_CHAR_MAP.get(charCode) : charCode;
+        const charCode = line.charCodeAt(i);
+        const char = line[i];
+        const needsRotate = VERTICAL_ROTATE_CHARS.has(charCode);
         if (charY + boxHeight > canvas.height) {
           colX -= boxWidth;
           charY = 0;
           if (colX < 0) break;
         }
-        if (glyphs.has(renderCode)) {
+        if (glyphs.has(charCode)) {
           if (shouldRenderBorder) {
             ctx.strokeStyle = "#000";
             ctx.lineWidth = 1;
             ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
           }
-          const glyph = glyphs.get(renderCode);
+          const glyph = glyphs.get(charCode);
           const bitmap = glyph.bitmap;
           if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
-            const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
-            const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
             const sourceData = bitmap.imagedata.data;
             ctx.fillStyle = "#000";
-            for (let y = 0; y < bitmap.rows; y++) {
-              for (let x = 0; x < bitmap.width; x++) {
-                if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
-                  ctx.fillRect(dx + x, dy + y, 1, 1);
+            if (needsRotate) {
+              const offCtx = document.createElement("canvas");
+              offCtx.width = bitmap.width;
+              offCtx.height = bitmap.rows;
+              const off = offCtx.getContext("2d");
+              off.fillStyle = "#fff";
+              off.fillRect(0, 0, offCtx.width, offCtx.height);
+              off.fillStyle = "#000";
+              for (let y = 0; y < bitmap.rows; y++) {
+                for (let x = 0; x < bitmap.width; x++) {
+                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                    off.fillRect(x, y, 1, 1);
+                  }
+                }
+              }
+              ctx.save();
+              ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
+              ctx.rotate(Math.PI / 2);
+              ctx.drawImage(offCtx, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
+              ctx.restore();
+            } else {
+              const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
+              const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+              for (let y = 0; y < bitmap.rows; y++) {
+                for (let x = 0; x < bitmap.width; x++) {
+                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                    ctx.fillRect(dx + x, dy + y, 1, 1);
+                  }
                 }
               }
             }
@@ -850,36 +872,58 @@ function renderRealSizePreview() {
       for (let i = 0; i < line.length; i++) {
         const charCode = line.charCodeAt(i);
         const char = line[i];
-        const renderCode2 = VERTICAL_CHAR_MAP.has(charCode) && glyphs.has(VERTICAL_CHAR_MAP.get(charCode))
-          ? VERTICAL_CHAR_MAP.get(charCode) : charCode;
+        const needsRotate2 = VERTICAL_ROTATE_CHARS.has(charCode);
         if (charY + boxHeight > canvas.height) {
           colX -= boxWidth;
           charY = 0;
           if (colX < 0) break;
         }
-        if (glyphs.has(renderCode2)) {
+        if (glyphs.has(charCode)) {
           if (shouldRenderBorder) {
             ctx.strokeStyle = "#000";
             ctx.lineWidth = 1;
             ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
           }
-          const glyph = glyphs.get(renderCode2);
+          const glyph = glyphs.get(charCode);
           const bitmap = glyph.bitmap;
           if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
-            const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
-            const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
             const sourceData = bitmap.imagedata.data;
             ctx.fillStyle = "#000";
-            for (let y = 0; y < bitmap.rows; y++) {
-              for (let x = 0; x < bitmap.width; x++) {
-                if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
-                  ctx.fillRect(dx + x, dy + y, 1, 1);
+            if (needsRotate2) {
+              const offCtx = document.createElement("canvas");
+              offCtx.width = bitmap.width;
+              offCtx.height = bitmap.rows;
+              const off = offCtx.getContext("2d");
+              off.fillStyle = "#fff";
+              off.fillRect(0, 0, offCtx.width, offCtx.height);
+              off.fillStyle = "#000";
+              for (let y = 0; y < bitmap.rows; y++) {
+                for (let x = 0; x < bitmap.width; x++) {
+                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                    off.fillRect(x, y, 1, 1);
+                  }
+                }
+              }
+              ctx.save();
+              ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
+              ctx.rotate(Math.PI / 2);
+              ctx.drawImage(offCtx, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
+              ctx.restore();
+            } else {
+              const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
+              const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+              for (let y = 0; y < bitmap.rows; y++) {
+                for (let x = 0; x < bitmap.width; x++) {
+                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                    ctx.fillRect(dx + x, dy + y, 1, 1);
+                  }
                 }
               }
             }
           }
           charY += boxHeight;
         }
+      }
       }
       colX -= boxWidth;
     }
