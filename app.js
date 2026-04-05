@@ -864,6 +864,16 @@ async function handleFontFileChange(e) {
   const file = e.target.files[0];
   if (!file) return;
 
+  // 前のフォントをアンロードしてWASMメモリを解放
+  if (activeFont) {
+    try {
+      ft.UnloadFont(activeFont.family_name);
+    } catch (e) {
+      console.warn("UnloadFont failed:", e);
+    }
+    activeFont = null;
+  }
+
   const fontBuffer = await file.arrayBuffer();
   try {
     const faces = ft.LoadFontFromBytes(new Uint8Array(fontBuffer));
