@@ -10,7 +10,7 @@ try {
   // update diagnostics if present
   try {
     const di = document.getElementById("diagnostics");
-    if (di) di.querySelector(".ft").textContent = "Loaded";
+    if (di) di.querySelector(".ft").textContent = "読み込み済み";
   } catch (e) {}
 } catch (err) {
   console.error("Failed to initialize FreeType:", err);
@@ -895,13 +895,13 @@ async function handleFontFileChange(e) {
         di.style.marginTop = "8px";
         di.style.fontSize = "0.9em";
         di.style.color = "#444";
-        di.innerHTML = `<div><strong>Diagnostics</strong></div>
-                    <div>FreeType: <span class="ft">unknown</span></div>
-                    <div>Active font: <span class="font">none</span></div>
-                    <div>Measured optimal dimensions: <span class="measured">unknown</span></div>
-                    <div>Final dimensions (w×h): <span class="final">unknown</span></div>
-                    <div>Preview length: <span class="plen">0</span></div>
-                    <div>Last render: <span class="last">never</span></div>`;
+        di.innerHTML = `<div><strong>診断情報</strong></div>
+                    <div>FreeType: <span class="ft">不明</span></div>
+                    <div>フォント: <span class="font">未選択</span></div>
+                    <div>最適サイズ（測定値）: <span class="measured">不明</span></div>
+                    <div>最終サイズ (幅×高さ): <span class="final">不明</span></div>
+                    <div>プレビュー文字数: <span class="plen">0</span></div>
+                    <div>最終レンダリング: <span class="last">未実行</span></div>`;
         document.getElementById("fontInfo").appendChild(di);
       }
       di.querySelector(".font").textContent =
@@ -911,7 +911,7 @@ async function handleFontFileChange(e) {
       di.querySelector(".final").textContent =
         `${finalWidth}px × ${finalHeight}px (${dimensions.width}+${currentCharSpacing} × ${dimensions.height}+${parseInt(document.getElementById("lineSpacing").value, 10) || 0})`;
       const ftEl = di.querySelector(".ft");
-      if (ftEl && ft) ftEl.textContent = "Loaded";
+      if (ftEl && ft) ftEl.textContent = "読み込み済み";
     } catch (e) {
       console.warn("diag create failed", e);
     }
@@ -922,7 +922,7 @@ async function handleFontFileChange(e) {
     renderRealSizePreview();
   } catch (err) {
     document.getElementById("fontInfo").innerText =
-      "Failed to parse font. " + (err && err.message ? err.message : err);
+      "フォントの読み込みに失敗しました。" + (err && err.message ? err.message : err);
     activeFont = null;
     console.error("Font parse error:", err);
   }
@@ -933,7 +933,7 @@ async function handleFontFileChange(e) {
  */
 async function convertFontToBin() {
   if (!activeFont) {
-    alert("Please select a TTF or OTF font file.");
+    alert("TTFまたはOTFフォントファイルを選択してください。");
     return;
   }
 
@@ -954,7 +954,7 @@ async function convertFontToBin() {
   const height = dimensions.height + lineSpacing;
 
   if (width <= 0 || height <= 0) {
-    alert("Resulting width and height must be positive.");
+    alert("幅と高さは1px以上になるように設定してください。");
     return;
   }
 
@@ -970,11 +970,11 @@ async function convertFontToBin() {
   ft.SetPixelSize(0, fontSize);
 
   const progressMsg = document.getElementById("progressMsg");
-  progressMsg.textContent = "Converting...";
+  progressMsg.textContent = "変換中...";
 
   const batchSize = 256;
   for (let i = 0; i < totalChar; i += batchSize) {
-    progressMsg.textContent = `Converting... ${i}/${totalChar}`;
+    progressMsg.textContent = `変換中... ${i}/${totalChar}`;
     await new Promise((r) => setTimeout(r, 1));
 
     const loadFlags = getFreetypeLoadFlags();
@@ -1050,7 +1050,7 @@ async function convertFontToBin() {
     }
   }
 
-  progressMsg.textContent = "Download ready.";
+  progressMsg.textContent = "ダウンロード準備完了！";
   const blob = new Blob([binBuffer], { type: "application/octet-stream" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -1100,10 +1100,10 @@ function base64EncodeUnicode(str) {
 async function saveToServer() {
   const status = document.getElementById("saveServerStatus");
   if (!status) return;
-  status.textContent = "Generating .bin...";
+  status.textContent = ".binファイルを生成中...";
   const res = await convertFontToBin();
   if (!res) {
-    status.textContent = "Conversion failed.";
+    status.textContent = "変換に失敗しました。";
     return;
   }
   const { blob, width, height } = res;
@@ -1439,7 +1439,7 @@ function autoDetectScale() {
 
     const statusEl = document.getElementById("calibrationStatus");
     if (statusEl) {
-      statusEl.innerHTML = `✓ <strong>Using your saved calibration: ${scale}%</strong> - adjust slider if needed`;
+      statusEl.innerHTML = `✓ <strong>保存済みキャリブレーション: ${scale}%</strong> - 必要に応じてスライダーで調整してください`;
       statusEl.style.color = "#4caf50";
     }
     return;
@@ -1461,7 +1461,7 @@ function autoDetectScale() {
 
   const statusEl = document.getElementById("calibrationStatus");
   if (statusEl && suggestedScale !== 100) {
-    statusEl.innerHTML = `💡 Scale auto-set to ${suggestedScale}% for your display - measure and adjust with slider, then save!`;
+    statusEl.innerHTML = `💡 表示スケールを${suggestedScale}%に自動設定しました - 定規で実際のサイズを確認しながら調整して保存してください`;
     statusEl.style.color = "#ff9800";
   }
 }
@@ -1489,7 +1489,7 @@ function updateDisplayScale() {
   if (infoEl) {
     const actualWidth = Math.round(55 * scale * 10) / 10;
     const actualHeight = Math.round(93 * scale * 10) / 10;
-    infoEl.textContent = `Current display size: ${actualWidth}mm × ${actualHeight}mm (adjust slider to reach exactly 55mm × 93mm)`;
+    infoEl.textContent = `現在の表示サイズ: ${actualWidth}mm × ${actualHeight}mm（55mm × 93mmに合わせてください）`;
   }
 }
 
@@ -1511,7 +1511,7 @@ document.getElementById("saveCalibration")?.addEventListener("click", () => {
     // Reset style after 5 seconds
     setTimeout(() => {
       if (statusEl) {
-        statusEl.innerHTML = `✓ <strong>Using your saved calibration: ${scalePercent}%</strong>`;
+        statusEl.innerHTML = `✓ <strong>キャリブレーションを保存しました: ${scalePercent}%</strong>`;
         statusEl.style.fontWeight = "normal";
       }
     }, 5000);
@@ -1531,7 +1531,7 @@ document.getElementById("resetDisplayScale")?.addEventListener("click", () => {
     const statusEl = document.getElementById("calibrationStatus");
     if (statusEl) {
       statusEl.innerHTML =
-        "💡 Calibration reset. Auto-detection applied - measure with ruler and adjust slider, then save!";
+        "💡 キャリブレーションをリセットしました。自動検出を適用中 - 定規で確認しながらスライダーを調整して保存してください";
       statusEl.style.color = "#ff9800";
     }
   }
