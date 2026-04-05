@@ -1443,13 +1443,14 @@ previewEl.addEventListener("input", () => {
 inputs.forEach((id) => {
   const element = document.getElementById(id);
   if (element) {
-    element.addEventListener("input", () => {
+    // チェックボックスはchangeイベント、それ以外はinputイベント
+    const eventType = element.type === "checkbox" ? "change" : "input";
+    element.addEventListener(eventType, () => {
       updateControlStates();
       renderPreviewText();
       renderRealSizePreview();
       renderGlyphToCanvas("A");
 
-      // Update measured width when fontSize or charSpacing changes
       if (id === "fontSize" || id === "charSpacing") {
         updateMeasuredWidth();
       }
