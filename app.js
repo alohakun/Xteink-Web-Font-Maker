@@ -611,73 +611,83 @@ function renderPreviewText() {
 
   if (isVerticalPreview) {
     // 縦書きプレビュー: 右から左へ列、上から下へ文字
+    // テキストを全文字のリストに展開
+    const allChars = previewText.replace(/\r?\n/g, "").split("");
     let colX = canvas.width - boxWidth;
-    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-      const line = lines[lineIdx];
-      let charY = 0;
+    let charY = 0;
+
+    for (let i = 0; i < allChars.length; i++) {
+      const char = allChars[i];
+      const charCode = char.charCodeAt(0);
+
+      // 列が溢れたら次の列へ（右→左）
+      if (charY + boxHeight > canvas.height) {
+        charY = 0;
+        colX -= boxWidth;
+      }
       if (colX < 0) break;
-      for (let i = 0; i < line.length; i++) {
-        const charCode = line.charCodeAt(i);
-        const char = line[i];
-        const needsRotate = VERTICAL_ROTATE_CHARS.has(charCode);
-        if (charY + boxHeight > canvas.height) {
-          colX -= boxWidth;
-          charY = 0;
-          if (colX < 0) break;
-        }
-        if (glyphs.has(charCode)) {
-          if (shouldRenderBorder) {
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
-          }
-          const glyph = glyphs.get(charCode);
-          const bitmap = glyph.bitmap;
-          if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
-            const sourceData = bitmap.imagedata.data;
-            ctx.fillStyle = "#000";
-            if (needsRotate) {
-              const offCtx = document.createElement("canvas");
-              offCtx.width = bitmap.width;
-              offCtx.height = bitmap.rows;
-              const off = offCtx.getContext("2d");
-              off.fillStyle = "#fff";
-              off.fillRect(0, 0, offCtx.width, offCtx.height);
-              off.fillStyle = "#000";
-              for (let y = 0; y < bitmap.rows; y++) {
-                for (let x = 0; x < bitmap.width; x++) {
-                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
-                    off.fillRect(x, y, 1, 1);
-                  }
-                }
-              }
-              ctx.save();
-              ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
-              ctx.rotate(-Math.PI / 2);
-              ctx.drawImage(offCtx, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
-              ctx.restore();
-            } else {
-              // 句読点は右下にシフト
-              const isShiftChar = VERTICAL_SHIFT_CHARS.has(charCode);
-              const dx = isShiftChar
-                ? colX + boxWidth - bitmap.width
-                : colX + Math.floor((boxWidth - bitmap.width) / 2);
-              const dy = isShiftChar
-                ? charY + boxHeight - bitmap.rows
-                : charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
-              for (let y = 0; y < bitmap.rows; y++) {
-                for (let x = 0; x < bitmap.width; x++) {
-                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
-                    ctx.fillRect(dx + x, dy + y, 1, 1);
-                  }
-                }
+
+      if (!glyphs.has(charCode)) { charY += boxHeight; continue; }
+
+      if (shouldRenderBorder) {
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
+      }
+
+      const glyph = glyphs.get(charCode);
+      const bitmap = glyph.bitmap;
+
+      if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
+        const sourceData = bitmap.imagedata.data;
+        ctx.fillStyle = "#000";
+
+        if (VERTICAL_ROTATE_CHARS.has(charCode)) {
+          // 「ー」などは90度回転
+          const offC = document.createElement("canvas");
+          offC.width = bitmap.width;
+          offC.height = bitmap.rows;
+          const offCtx = offC.getContext("2d");
+          offCtx.fillStyle = "#000";
+          for (let y = 0; y < bitmap.rows; y++) {
+            for (let x = 0; x < bitmap.width; x++) {
+              if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                offCtx.fillRect(x, y, 1, 1);
               }
             }
           }
-          charY += boxHeight;
+          ctx.save();
+          ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
+          ctx.rotate(Math.PI / 2);
+          ctx.drawImage(offC, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
+          ctx.restore();
+
+        } else if (VERTICAL_SHIFT_CHARS.has(charCode)) {
+          // 「。」「、」などは右下に配置
+          const dx = colX + boxWidth - bitmap.width;
+          const dy = charY + boxHeight - bitmap.rows;
+          for (let y = 0; y < bitmap.rows; y++) {
+            for (let x = 0; x < bitmap.width; x++) {
+              if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                ctx.fillRect(dx + x, dy + y, 1, 1);
+              }
+            }
+          }
+
+        } else {
+          // 通常文字
+          const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
+          const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+          for (let y = 0; y < bitmap.rows; y++) {
+            for (let x = 0; x < bitmap.width; x++) {
+              if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                ctx.fillRect(dx + x, dy + y, 1, 1);
+              }
+            }
+          }
         }
       }
-      colX -= boxWidth;
+      charY += boxHeight;
     }
   } else {
     // 横書きプレビュー
@@ -868,72 +878,78 @@ function renderRealSizePreview() {
 
   if (isVerticalPreview) {
     // 縦書きプレビュー: 右から左へ列、上から下へ文字
+    const allChars2 = previewText.replace(/\r?\n/g, "").split("");
     let colX = canvas.width - boxWidth;
-    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-      const line = lines[lineIdx];
-      let charY = 0;
+    let charY = 0;
+
+    for (let i = 0; i < allChars2.length; i++) {
+      const char = allChars2[i];
+      const charCode = char.charCodeAt(0);
+
+      if (charY + boxHeight > canvas.height) {
+        charY = 0;
+        colX -= boxWidth;
+      }
       if (colX < 0) break;
-      for (let i = 0; i < line.length; i++) {
-        const charCode = line.charCodeAt(i);
-        const char = line[i];
-        const needsRotate2 = VERTICAL_ROTATE_CHARS.has(charCode);
-        if (charY + boxHeight > canvas.height) {
-          colX -= boxWidth;
-          charY = 0;
-          if (colX < 0) break;
-        }
-        if (glyphs.has(charCode)) {
-          if (shouldRenderBorder) {
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
-          }
-          const glyph = glyphs.get(charCode);
-          const bitmap = glyph.bitmap;
-          if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
-            const sourceData = bitmap.imagedata.data;
-            ctx.fillStyle = "#000";
-            if (needsRotate2) {
-              const offCtx = document.createElement("canvas");
-              offCtx.width = bitmap.width;
-              offCtx.height = bitmap.rows;
-              const off = offCtx.getContext("2d");
-              off.fillStyle = "#fff";
-              off.fillRect(0, 0, offCtx.width, offCtx.height);
-              off.fillStyle = "#000";
-              for (let y = 0; y < bitmap.rows; y++) {
-                for (let x = 0; x < bitmap.width; x++) {
-                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
-                    off.fillRect(x, y, 1, 1);
-                  }
-                }
-              }
-              ctx.save();
-              ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
-              ctx.rotate(-Math.PI / 2);
-              ctx.drawImage(offCtx, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
-              ctx.restore();
-            } else {
-              const isShiftChar2 = VERTICAL_SHIFT_CHARS.has(charCode);
-              const dx = isShiftChar2
-                ? colX + boxWidth - bitmap.width
-                : colX + Math.floor((boxWidth - bitmap.width) / 2);
-              const dy = isShiftChar2
-                ? charY + boxHeight - bitmap.rows
-                : charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
-              for (let y = 0; y < bitmap.rows; y++) {
-                for (let x = 0; x < bitmap.width; x++) {
-                  if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
-                    ctx.fillRect(dx + x, dy + y, 1, 1);
-                  }
-                }
+
+      if (!glyphs.has(charCode)) { charY += boxHeight; continue; }
+
+      if (shouldRenderBorder) {
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
+      }
+
+      const glyph = glyphs.get(charCode);
+      const bitmap = glyph.bitmap;
+
+      if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
+        const sourceData = bitmap.imagedata.data;
+        ctx.fillStyle = "#000";
+
+        if (VERTICAL_ROTATE_CHARS.has(charCode)) {
+          const offC = document.createElement("canvas");
+          offC.width = bitmap.width;
+          offC.height = bitmap.rows;
+          const offCtx = offC.getContext("2d");
+          offCtx.fillStyle = "#000";
+          for (let y = 0; y < bitmap.rows; y++) {
+            for (let x = 0; x < bitmap.width; x++) {
+              if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                offCtx.fillRect(x, y, 1, 1);
               }
             }
           }
-          charY += boxHeight;
+          ctx.save();
+          ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
+          ctx.rotate(Math.PI / 2);
+          ctx.drawImage(offC, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
+          ctx.restore();
+
+        } else if (VERTICAL_SHIFT_CHARS.has(charCode)) {
+          const dx = colX + boxWidth - bitmap.width;
+          const dy = charY + boxHeight - bitmap.rows;
+          for (let y = 0; y < bitmap.rows; y++) {
+            for (let x = 0; x < bitmap.width; x++) {
+              if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                ctx.fillRect(dx + x, dy + y, 1, 1);
+              }
+            }
+          }
+
+        } else {
+          const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
+          const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+          for (let y = 0; y < bitmap.rows; y++) {
+            for (let x = 0; x < bitmap.width; x++) {
+              if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                ctx.fillRect(dx + x, dy + y, 1, 1);
+              }
+            }
+          }
         }
       }
-      colX -= boxWidth;
+      charY += boxHeight;
     }
   } else {
     // 横書きプレビュー
