@@ -1009,6 +1009,14 @@ async function convertFontToBin() {
   const progressMsg = document.getElementById("progressMsg");
   progressMsg.textContent = "変換中...";
 
+  // 縦書き時：縦向きグリフを事前に一括ロード
+  let verticalGlyphCache = new Map();
+  if (isVerticalFont && VERTICAL_CHAR_MAP.size > 0) {
+    const vCodes = [...new Set(VERTICAL_CHAR_MAP.values())];
+    const vGlyphs = ft.LoadGlyphs(vCodes, getFreetypeLoadFlags());
+    verticalGlyphCache = vGlyphs;
+  }
+
   const batchSize = 256;
   for (let i = 0; i < totalChar; i += batchSize) {
     progressMsg.textContent = `変換中... ${i}/${totalChar}`;
@@ -1020,6 +1028,15 @@ async function convertFontToBin() {
 
     for (const [charCode, glyph] of glyphs.entries()) {
       const char = String.fromCharCode(charCode);
+
+      // 縦書き時：キャッシュから縦向きグリフを取得
+      let activeGlyph = glyph;
+      if (isVerticalFont && VERTICAL_CHAR_MAP.has(charCode)) {
+        const vCode = VERTICAL_CHAR_MAP.get(charCode);
+        if (verticalGlyphCache.has(vCode) && verticalGlyphCache.get(vCode).bitmap?.width > 0) {
+          activeGlyph = verticalGlyphCache.get(vCode);
+        }
+      }
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
@@ -1033,27 +1050,22 @@ async function convertFontToBin() {
         ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
       }
 
-      if (glyph.bitmap && glyph.bitmap.width > 0 && glyph.bitmap.rows > 0) {
-        // Skip rendering for whitespace characters even if FreeType returns a .notdef glyph
-        // This mimics C# GDI+ behavior which doesn't render missing glyphs for whitespace
+      if (activeGlyph.bitmap && activeGlyph.bitmap.width > 0 && activeGlyph.bitmap.rows > 0) {
         if (!isWhitespaceOrInvisible(charCode)) {
-          // Center the glyph in the box
-          let dx = Math.floor((width - glyph.bitmap.width) / 2);
+          let dx = Math.floor((width - activeGlyph.bitmap.width) / 2);
 
           if (useOpticalAlign) {
-            // No kerning context in bin file, treat every char as first
-
-            dx = getOpticalDx(char, glyph.bitmap.width, width, true);
+            dx = getOpticalDx(char, activeGlyph.bitmap.width, width, true);
           }
 
           const baseline = computeBaselineOffset(height, lineSpacing);
-          const dy = baseline - glyph.bitmap_top;
+          const dy = baseline - activeGlyph.bitmap_top;
 
-          const sourceData = glyph.bitmap.imagedata.data;
+          const sourceData = activeGlyph.bitmap.imagedata.data;
           ctx.fillStyle = "#000";
-          for (let y = 0; y < glyph.bitmap.rows; y++) {
-            for (let x = 0; x < glyph.bitmap.width; x++) {
-              const pixelIndex = (y * glyph.bitmap.width + x) * 4;
+          for (let y = 0; y < activeGlyph.bitmap.rows; y++) {
+            for (let x = 0; x < activeGlyph.bitmap.width; x++) {
+              const pixelIndex = (y * activeGlyph.bitmap.width + x) * 4;
               if (shouldRenderPixel(sourceData, pixelIndex, threshold)) {
                 ctx.fillRect(dx + x, dy + y, 1, 1);
               }
