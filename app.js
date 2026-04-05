@@ -1486,9 +1486,12 @@ function updateDisplayScale() {
 
   const scale = parseInt(displayScaleSlider.value, 10) / 100;
 
-  // Apply scale to canvas display
-  realSizeCanvas.style.transform = `scale(${scale})`;
-  realSizeCanvas.style.transformOrigin = "top left";
+  // canvasのCSS表示サイズをスケールに合わせて変更（transform不使用）
+  const baseW = realSizeCanvas.width;   // 480
+  const baseH = realSizeCanvas.height;  // 800
+  realSizeCanvas.style.width = Math.round(baseW * scale) + "px";
+  realSizeCanvas.style.height = Math.round(baseH * scale) + "px";
+  realSizeCanvas.style.transform = "";
 
   if (displayScaleValue) {
     displayScaleValue.textContent = (scale * 100).toFixed(0) + "%";

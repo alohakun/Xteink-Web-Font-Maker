@@ -527,11 +527,13 @@ canvas {
 #canvasWrapper {
     border: 2px solid var(--ink);
     border-radius: 2px;
-    display: inline-block;
+    display: block;
     background: var(--paper);
     overflow: hidden;
     line-height: 0;
     box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    width: 100%;
+    position: relative;
 }
 #realSizeCanvas {
     image-rendering: pixelated;
