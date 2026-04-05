@@ -242,20 +242,23 @@
         const charSpacing = parseInt(option.dataset.char);
         const lineSpacing = parseInt(option.dataset.line);
         const statusEl = document.getElementById('presetStatus');
+        const fontFileInput = document.getElementById('fontFile');
 
         statusEl.textContent = '読み込み中...';
 
         try {
             const res = await fetch(filePath);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const arrayBuffer = await res.arrayBuffer();
 
-            const file = new File([arrayBuffer], filePath.split('/').pop(), { type: 'font/ttf' });
+            // ストリーミングで読み込みメモリ効率を上げる
+            const blob = await res.blob();
+            const fileName = filePath.split('/').pop();
+            const file = new File([blob], fileName, { type: 'font/ttf' });
+
             const dt = new DataTransfer();
             dt.items.add(file);
-            const fontFileInput = document.getElementById('fontFile');
             fontFileInput.files = dt.files;
-            document.querySelector('.file-label').textContent = file.name;
+            document.querySelector('.file-label').textContent = fileName;
 
             // 設定値を反映
             document.getElementById('fontSize').value = fontSize;
@@ -268,6 +271,7 @@
             statusEl.textContent = `✓ ${option.text.replace('（デフォルト）', '')} を読み込みました`;
         } catch (e) {
             statusEl.textContent = `エラー: ${e.message}`;
+            console.error('プリセット読み込みエラー:', e);
         }
     }
 
