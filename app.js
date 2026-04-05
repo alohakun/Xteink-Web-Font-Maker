@@ -596,12 +596,13 @@ function renderPreviewText() {
   ft.SetPixelSize(0, fontSize);
 
   const loadFlags = getFreetypeLoadFlags();
-  const charCodes = [
-    ...new Set(previewText.split("").map((c) => c.charCodeAt(0))),
-  ];
+  const isVerticalPreview = document.getElementById("isVerticalFont").checked;
+  const baseCodes = [...new Set(previewText.split("").map((c) => c.charCodeAt(0)))];
+  // 縦書き時は縦向きグリフのコードも追加ロード
+  const extraCodes = isVerticalPreview ? [...new Set(VERTICAL_CHAR_MAP.values())] : [];
+  const charCodes = [...new Set([...baseCodes, ...extraCodes])];
   const glyphs = ft.LoadGlyphs(charCodes, loadFlags);
 
-  const isVerticalPreview = document.getElementById("isVerticalFont").checked;
   const lines = previewText.split(/\r?\n/);
 
   if (isVerticalPreview) {
@@ -614,18 +615,21 @@ function renderPreviewText() {
       for (let i = 0; i < line.length; i++) {
         const charCode = line.charCodeAt(i);
         const char = line[i];
+        // 縦書き用グリフに置換
+        const renderCode = VERTICAL_CHAR_MAP.has(charCode) && glyphs.has(VERTICAL_CHAR_MAP.get(charCode))
+          ? VERTICAL_CHAR_MAP.get(charCode) : charCode;
         if (charY + boxHeight > canvas.height) {
           colX -= boxWidth;
           charY = 0;
           if (colX < 0) break;
         }
-        if (glyphs.has(charCode)) {
+        if (glyphs.has(renderCode)) {
           if (shouldRenderBorder) {
             ctx.strokeStyle = "#000";
             ctx.lineWidth = 1;
             ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
           }
-          const glyph = glyphs.get(charCode);
+          const glyph = glyphs.get(renderCode);
           const bitmap = glyph.bitmap;
           if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
             const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
@@ -824,12 +828,12 @@ function renderRealSizePreview() {
   ft.SetPixelSize(0, fontSize);
 
   const loadFlags = getFreetypeLoadFlags();
-  const charCodes = [
-    ...new Set(previewText.split("").map((c) => c.charCodeAt(0))),
-  ];
+  const isVerticalPreview = document.getElementById("isVerticalFont").checked;
+  const baseCodes2 = [...new Set(previewText.split("").map((c) => c.charCodeAt(0)))];
+  const extraCodes2 = isVerticalPreview ? [...new Set(VERTICAL_CHAR_MAP.values())] : [];
+  const charCodes = [...new Set([...baseCodes2, ...extraCodes2])];
   const glyphs = ft.LoadGlyphs(charCodes, loadFlags);
 
-  const isVerticalPreview = document.getElementById("isVerticalFont").checked;
   const lines = previewText.split(/\r?\n/);
 
   if (isVerticalPreview) {
@@ -842,18 +846,20 @@ function renderRealSizePreview() {
       for (let i = 0; i < line.length; i++) {
         const charCode = line.charCodeAt(i);
         const char = line[i];
+        const renderCode2 = VERTICAL_CHAR_MAP.has(charCode) && glyphs.has(VERTICAL_CHAR_MAP.get(charCode))
+          ? VERTICAL_CHAR_MAP.get(charCode) : charCode;
         if (charY + boxHeight > canvas.height) {
           colX -= boxWidth;
           charY = 0;
           if (colX < 0) break;
         }
-        if (glyphs.has(charCode)) {
+        if (glyphs.has(renderCode2)) {
           if (shouldRenderBorder) {
             ctx.strokeStyle = "#000";
             ctx.lineWidth = 1;
             ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
           }
-          const glyph = glyphs.get(charCode);
+          const glyph = glyphs.get(renderCode2);
           const bitmap = glyph.bitmap;
           if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
             const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
