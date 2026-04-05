@@ -1045,7 +1045,9 @@ async function convertFontToBin() {
           if (bit) {
             let finalByteIdx, finalBitIdx;
             if (isVerticalFont) {
-              finalByteIdx = charCode * charByte + x * widthByte + (y >> 3);
+              // 縦書き: 90度回転。x軸反転してミラーを修正
+              const rx = width - 1 - x;
+              finalByteIdx = charCode * charByte + rx * widthByte + (y >> 3);
               finalBitIdx = 7 - (y % 8);
             } else {
               finalByteIdx = charCode * charByte + y * widthByte + (x >> 3);
