@@ -279,8 +279,8 @@
     const presetSelect = document.getElementById('presetSelect');
     presetSelect.addEventListener('change', () => loadPreset(presetSelect));
 
-    // ページ読み込み時にデフォルト（LINE Seed JP Bold）を自動読み込み
-    window.addEventListener('load', () => loadPreset(presetSelect));
+    // 注: 自動読み込みは無効（OOM対策）
+    // window.addEventListener('load', () => loadPreset(presetSelect));
 </script>
 </body>
 </html>
