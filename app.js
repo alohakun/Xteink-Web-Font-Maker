@@ -653,12 +653,18 @@ function renderPreviewText() {
               }
               ctx.save();
               ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
-              ctx.rotate(Math.PI / 2);
+              ctx.rotate(-Math.PI / 2);
               ctx.drawImage(offCtx, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
               ctx.restore();
             } else {
-              const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
-              const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+              // 句読点は右下にシフト
+              const isShiftChar = VERTICAL_SHIFT_CHARS.has(charCode);
+              const dx = isShiftChar
+                ? colX + boxWidth - bitmap.width
+                : colX + Math.floor((boxWidth - bitmap.width) / 2);
+              const dy = isShiftChar
+                ? charY + boxHeight - bitmap.rows
+                : charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
               for (let y = 0; y < bitmap.rows; y++) {
                 for (let x = 0; x < bitmap.width; x++) {
                   if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
@@ -904,12 +910,17 @@ function renderRealSizePreview() {
               }
               ctx.save();
               ctx.translate(colX + boxWidth / 2, charY + boxHeight / 2);
-              ctx.rotate(Math.PI / 2);
+              ctx.rotate(-Math.PI / 2);
               ctx.drawImage(offCtx, -bitmap.rows / 2, -bitmap.width / 2, bitmap.rows, bitmap.width);
               ctx.restore();
             } else {
-              const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
-              const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+              const isShiftChar2 = VERTICAL_SHIFT_CHARS.has(charCode);
+              const dx = isShiftChar2
+                ? colX + boxWidth - bitmap.width
+                : colX + Math.floor((boxWidth - bitmap.width) / 2);
+              const dy = isShiftChar2
+                ? charY + boxHeight - bitmap.rows
+                : charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
               for (let y = 0; y < bitmap.rows; y++) {
                 for (let x = 0; x < bitmap.width; x++) {
                   if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
