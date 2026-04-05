@@ -29,6 +29,33 @@ const API_BASE = "https://apixtgallery.lakafior.com";
  * Helper function to check if a character is a whitespace/invisible character.
  * These characters should render as blank even if FreeType returns a .notdef glyph.
  */
+// 縦書き時の文字置換マップ（横向き文字→縦向きグリフ）
+const VERTICAL_CHAR_MAP = new Map([
+  [0x30FC, 0xFE31],  // ー → ︱
+  [0x2015, 0xFE31],  // ― → ︱
+  [0xFF0D, 0xFE31],  // － → ︱
+  [0x007E, 0xFE34],  // ~ → ︴
+  [0xFF5E, 0xFE34],  // ～ → ︴
+  [0x2026, 0xFE19],  // … → ︙
+  [0x2025, 0xFE19],  // ‥ → ︙
+  [0x3001, 0xFE11],  // 、→ ︑
+  [0x3002, 0xFE12],  // 。→ ︒
+  [0xFF08, 0xFE35],  // （→ ︵
+  [0xFF09, 0xFE36],  // ）→ ︶
+  [0x300C, 0xFE41],  // 「→ ﹁
+  [0x300D, 0xFE42],  // 」→ ﹂
+  [0x300E, 0xFE43],  // 『→ ﹃
+  [0x300F, 0xFE44],  // 』→ ﹄
+  [0x3010, 0xFE39],  // 【→ ︹
+  [0x3011, 0xFE3A],  // 】→ ︺
+  [0xFF3B, 0xFE47],  // ［→ ﹇
+  [0xFF3D, 0xFE48],  // ］→ ﹈
+]);
+
+function getVerticalCharCode(charCode) {
+  return VERTICAL_CHAR_MAP.get(charCode) ?? charCode;
+}
+
 function isWhitespaceOrInvisible(charCode) {
   // Common whitespace and invisible characters that should render as blank
   const whitespaceChars = new Set([
@@ -992,8 +1019,17 @@ async function convertFontToBin() {
     const glyphs = ft.LoadGlyphs(charCodes, loadFlags);
 
     for (const [charCode, glyph] of glyphs.entries()) {
-      const char = String.fromCharCode(charCode);
+      // 縦書き時は縦向きグリフに置換してレンダリング
+      let renderGlyph = glyph;
+      if (isVerticalFont && VERTICAL_CHAR_MAP.has(charCode)) {
+        const vCode = VERTICAL_CHAR_MAP.get(charCode);
+        const vGlyphs = ft.LoadGlyphs([vCode], getFreetypeLoadFlags());
+        if (vGlyphs.has(vCode) && vGlyphs.get(vCode).bitmap?.width > 0) {
+          renderGlyph = vGlyphs.get(vCode);
+        }
+      }
 
+      const char = String.fromCharCode(charCode);
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
@@ -1007,27 +1043,22 @@ async function convertFontToBin() {
         ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
       }
 
-      if (glyph.bitmap && glyph.bitmap.width > 0 && glyph.bitmap.rows > 0) {
-        // Skip rendering for whitespace characters even if FreeType returns a .notdef glyph
-        // This mimics C# GDI+ behavior which doesn't render missing glyphs for whitespace
+      if (renderGlyph.bitmap && renderGlyph.bitmap.width > 0 && renderGlyph.bitmap.rows > 0) {
         if (!isWhitespaceOrInvisible(charCode)) {
-          // Center the glyph in the box
-          let dx = Math.floor((width - glyph.bitmap.width) / 2);
+          let dx = Math.floor((width - renderGlyph.bitmap.width) / 2);
 
           if (useOpticalAlign) {
-            // No kerning context in bin file, treat every char as first
-
-            dx = getOpticalDx(char, glyph.bitmap.width, width, true);
+            dx = getOpticalDx(char, renderGlyph.bitmap.width, width, true);
           }
 
           const baseline = computeBaselineOffset(height, lineSpacing);
-          const dy = baseline - glyph.bitmap_top;
+          const dy = baseline - renderGlyph.bitmap_top;
 
-          const sourceData = glyph.bitmap.imagedata.data;
+          const sourceData = renderGlyph.bitmap.imagedata.data;
           ctx.fillStyle = "#000";
-          for (let y = 0; y < glyph.bitmap.rows; y++) {
-            for (let x = 0; x < glyph.bitmap.width; x++) {
-              const pixelIndex = (y * glyph.bitmap.width + x) * 4;
+          for (let y = 0; y < renderGlyph.bitmap.rows; y++) {
+            for (let x = 0; x < renderGlyph.bitmap.width; x++) {
+              const pixelIndex = (y * renderGlyph.bitmap.width + x) * 4;
               if (shouldRenderPixel(sourceData, pixelIndex, threshold)) {
                 ctx.fillRect(dx + x, dy + y, 1, 1);
               }
