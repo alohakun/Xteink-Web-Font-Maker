@@ -1019,16 +1019,6 @@ async function convertFontToBin() {
     const glyphs = ft.LoadGlyphs(charCodes, loadFlags);
 
     for (const [charCode, glyph] of glyphs.entries()) {
-      // 縦書き時は縦向きグリフに置換してレンダリング
-      let renderGlyph = glyph;
-      if (isVerticalFont && VERTICAL_CHAR_MAP.has(charCode)) {
-        const vCode = VERTICAL_CHAR_MAP.get(charCode);
-        const vGlyphs = ft.LoadGlyphs([vCode], getFreetypeLoadFlags());
-        if (vGlyphs.has(vCode) && vGlyphs.get(vCode).bitmap?.width > 0) {
-          renderGlyph = vGlyphs.get(vCode);
-        }
-      }
-
       const char = String.fromCharCode(charCode);
       const canvas = document.createElement("canvas");
       canvas.width = width;
@@ -1043,22 +1033,27 @@ async function convertFontToBin() {
         ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
       }
 
-      if (renderGlyph.bitmap && renderGlyph.bitmap.width > 0 && renderGlyph.bitmap.rows > 0) {
+      if (glyph.bitmap && glyph.bitmap.width > 0 && glyph.bitmap.rows > 0) {
+        // Skip rendering for whitespace characters even if FreeType returns a .notdef glyph
+        // This mimics C# GDI+ behavior which doesn't render missing glyphs for whitespace
         if (!isWhitespaceOrInvisible(charCode)) {
-          let dx = Math.floor((width - renderGlyph.bitmap.width) / 2);
+          // Center the glyph in the box
+          let dx = Math.floor((width - glyph.bitmap.width) / 2);
 
           if (useOpticalAlign) {
-            dx = getOpticalDx(char, renderGlyph.bitmap.width, width, true);
+            // No kerning context in bin file, treat every char as first
+
+            dx = getOpticalDx(char, glyph.bitmap.width, width, true);
           }
 
           const baseline = computeBaselineOffset(height, lineSpacing);
-          const dy = baseline - renderGlyph.bitmap_top;
+          const dy = baseline - glyph.bitmap_top;
 
-          const sourceData = renderGlyph.bitmap.imagedata.data;
+          const sourceData = glyph.bitmap.imagedata.data;
           ctx.fillStyle = "#000";
-          for (let y = 0; y < renderGlyph.bitmap.rows; y++) {
-            for (let x = 0; x < renderGlyph.bitmap.width; x++) {
-              const pixelIndex = (y * renderGlyph.bitmap.width + x) * 4;
+          for (let y = 0; y < glyph.bitmap.rows; y++) {
+            for (let x = 0; x < glyph.bitmap.width; x++) {
+              const pixelIndex = (y * glyph.bitmap.width + x) * 4;
               if (shouldRenderPixel(sourceData, pixelIndex, threshold)) {
                 ctx.fillRect(dx + x, dy + y, 1, 1);
               }
