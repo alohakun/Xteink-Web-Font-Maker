@@ -30,27 +30,31 @@ const API_BASE = "https://apixtgallery.lakafior.com";
  * These characters should render as blank even if FreeType returns a .notdef glyph.
  */
 // 縦書き時の文字置換マップ（横向き文字→縦向きグリフ）
-const VERTICAL_CHAR_MAP = new Map([
-  [0x30FC, 0xFE31],  // ー → ︱
-  [0x2015, 0xFE31],  // ― → ︱
-  [0xFF0D, 0xFE31],  // － → ︱
-  [0x007E, 0xFE34],  // ~ → ︴
-  [0xFF5E, 0xFE34],  // ～ → ︴
-  [0x2026, 0xFE19],  // … → ︙
-  [0x2025, 0xFE19],  // ‥ → ︙
-  [0x3001, 0xFE11],  // 、→ ︑
-  [0x3002, 0xFE12],  // 。→ ︒
-  [0xFF08, 0xFE35],  // （→ ︵
-  [0xFF09, 0xFE36],  // ）→ ︶
-  [0x300C, 0xFE41],  // 「→ ﹁
-  [0x300D, 0xFE42],  // 」→ ﹂
-  [0x300E, 0xFE43],  // 『→ ﹃
-  [0x300F, 0xFE44],  // 』→ ﹄
-  [0x3010, 0xFE39],  // 【→ ︹
-  [0x3011, 0xFE3A],  // 】→ ︺
-  [0xFF3B, 0xFE47],  // ［→ ﹇
-  [0xFF3D, 0xFE48],  // ］→ ﹈
+// 縦書き時に90度回転が必要な文字セット
+const VERTICAL_ROTATE_CHARS = new Set([
+  0x30FC,  // ー
+  0x2015,  // ―
+  0xFF0D,  // －
+  0x007E,  // ~
+  0xFF5E,  // ～
+  0x2026,  // …
+  0x2025,  // ‥
 ]);
+
+// 縦書き時に位置を右下にずらす文字（句読点・括弧）
+const VERTICAL_SHIFT_CHARS = new Set([
+  0x3001,  // 、
+  0x3002,  // 。
+  0xFF08,  // （
+  0xFF09,  // ）
+  0x300C,  // 「
+  0x300D,  // 」
+  0x300E,  // 『
+  0x300F,  // 』
+]);
+
+// 後方互換性のため空マップを維持
+const VERTICAL_CHAR_MAP = new Map();
 
 function getVerticalCharCode(charCode) {
   return VERTICAL_CHAR_MAP.get(charCode) ?? charCode;
@@ -1074,14 +1078,6 @@ async function convertFontToBin() {
     for (const [charCode, glyph] of glyphs.entries()) {
       const char = String.fromCharCode(charCode);
 
-      // 縦書き時：キャッシュから縦向きグリフを取得
-      let activeGlyph = glyph;
-      if (isVerticalFont && VERTICAL_CHAR_MAP.has(charCode)) {
-        const vCode = VERTICAL_CHAR_MAP.get(charCode);
-        if (verticalGlyphCache.has(vCode) && verticalGlyphCache.get(vCode).bitmap?.width > 0) {
-          activeGlyph = verticalGlyphCache.get(vCode);
-        }
-      }
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
@@ -1095,24 +1091,53 @@ async function convertFontToBin() {
         ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
       }
 
-      if (activeGlyph.bitmap && activeGlyph.bitmap.width > 0 && activeGlyph.bitmap.rows > 0) {
+      if (glyph.bitmap && glyph.bitmap.width > 0 && glyph.bitmap.rows > 0) {
         if (!isWhitespaceOrInvisible(charCode)) {
-          let dx = Math.floor((width - activeGlyph.bitmap.width) / 2);
+          const needsRotate = isVerticalFont && VERTICAL_ROTATE_CHARS.has(charCode);
 
-          if (useOpticalAlign) {
-            dx = getOpticalDx(char, activeGlyph.bitmap.width, width, true);
+          let dx = Math.floor((width - glyph.bitmap.width) / 2);
+          if (useOpticalAlign && !needsRotate) {
+            dx = getOpticalDx(char, glyph.bitmap.width, width, true);
           }
-
           const baseline = computeBaselineOffset(height, lineSpacing);
-          const dy = baseline - activeGlyph.bitmap_top;
+          const dy = baseline - glyph.bitmap_top;
 
-          const sourceData = activeGlyph.bitmap.imagedata.data;
+          const sourceData = glyph.bitmap.imagedata.data;
           ctx.fillStyle = "#000";
-          for (let y = 0; y < activeGlyph.bitmap.rows; y++) {
-            for (let x = 0; x < activeGlyph.bitmap.width; x++) {
-              const pixelIndex = (y * activeGlyph.bitmap.width + x) * 4;
-              if (shouldRenderPixel(sourceData, pixelIndex, threshold)) {
-                ctx.fillRect(dx + x, dy + y, 1, 1);
+
+          if (needsRotate) {
+            // 90度回転して描画
+            const offCtx = document.createElement("canvas");
+            offCtx.width = glyph.bitmap.width;
+            offCtx.height = glyph.bitmap.rows;
+            const off = offCtx.getContext("2d");
+            off.fillStyle = "#fff";
+            off.fillRect(0, 0, offCtx.width, offCtx.height);
+            off.fillStyle = "#000";
+            for (let y = 0; y < glyph.bitmap.rows; y++) {
+              for (let x = 0; x < glyph.bitmap.width; x++) {
+                if (shouldRenderPixel(sourceData, (y * glyph.bitmap.width + x) * 4, threshold)) {
+                  off.fillRect(x, y, 1, 1);
+                }
+              }
+            }
+            // 90度回転してメインcanvasに描画
+            ctx.save();
+            ctx.translate(width / 2, height / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(offCtx,
+              -glyph.bitmap.rows / 2,
+              -glyph.bitmap.width / 2,
+              glyph.bitmap.rows,
+              glyph.bitmap.width
+            );
+            ctx.restore();
+          } else {
+            for (let y = 0; y < glyph.bitmap.rows; y++) {
+              for (let x = 0; x < glyph.bitmap.width; x++) {
+                if (shouldRenderPixel(sourceData, (y * glyph.bitmap.width + x) * 4, threshold)) {
+                  ctx.fillRect(dx + x, dy + y, 1, 1);
+                }
               }
             }
           }
