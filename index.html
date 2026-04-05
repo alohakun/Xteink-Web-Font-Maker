@@ -1,408 +1,220 @@
 <!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>XTEink Web Font Maker</title>
-        <link rel="stylesheet" href="style.css" />
-        <link
-            rel="apple-touch-icon"
-            sizes="57x57"
-            href="/icons/apple-icon-57x57.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="60x60"
-            href="/icons/apple-icon-60x60.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="72x72"
-            href="/icons/apple-icon-72x72.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="76x76"
-            href="/icons/apple-icon-76x76.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="114x114"
-            href="/icons/apple-icon-114x114.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="120x120"
-            href="/icons/apple-icon-120x120.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="144x144"
-            href="/icons/apple-icon-144x144.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="152x152"
-            href="/icons/apple-icon-152x152.png"
-        />
-        <link
-            rel="apple-touch-icon"
-            sizes="180x180"
-            href="/icons/apple-icon-180x180.png"
-        />
-        <link
-            rel="icon"
-            type="image/png"
-            sizes="192x192"
-            href="/icons/android-icon-192x192.png"
-        />
-        <link
-            rel="icon"
-            type="image/png"
-            sizes="32x32"
-            href="/icons/favicon-32x32.png"
-        />
-        <link
-            rel="icon"
-            type="image/png"
-            sizes="96x96"
-            href="/icons/favicon-96x96.png"
-        />
-        <link
-            rel="icon"
-            type="image/png"
-            sizes="16x16"
-            href="/icons/favicon-16x16.png"
-        />
-        <link rel="manifest" href="/icons/manifest.json" />
-        <meta name="msapplication-TileColor" content="#ffffff" />
-        <meta
-            name="msapplication-TileImage"
-            content="/icons/ms-icon-144x144.png"
-        />
-        <meta name="theme-color" content="#ffffff" />
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <div class="header-top">
-                    <h1>XTEink Web Font Maker</h1>
-                    <nav class="top-nav">
-                        <div class="nav-group">
-                            <a
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="nav-btn"
-                                href="https://www.reddit.com/r/xteinkereader/"
-                                >Reddit</a
-                            >
-                            <a
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="nav-btn"
-                                href="https://github.com/lakafior/XTEink-Web-Font-Toolkit"
-                                >GitHub</a
-                            >
-                            <a class="nav-btn" href="gallery.html">Gallery</a>
-                        </div>
-                    </nav>
-                </div>
-            </header>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xteink Font Maker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-icon-180x180.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="manifest" href="/icons/manifest.json" />
+    <meta name="theme-color" content="#e8e6e0" />
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="header-top">
+            <div class="logo-area">
+                <h1>Xteink <span class="title-sub">Font Maker</span></h1>
+                <p class="header-sub">XTEink用フォント変換ツール (.bin形式)</p>
+            </div>
+            <nav class="top-nav">
+                <a target="_blank" rel="noopener noreferrer" class="nav-btn" href="https://www.reddit.com/r/xteinkereader/">● Reddit</a>
+                <a target="_blank" rel="noopener noreferrer" class="nav-btn" href="https://github.com/alohakun/Xteink-Web-Font-Maker">◆ GitHub</a>
+            </nav>
+        </div>
+        <div class="header-divider"><span class="divider-text">FONT CONVERSION SYSTEM v2.0</span></div>
+    </header>
 
-            <main>
-                <!-- Main Grid: Settings Left, Previews Right -->
-                <div class="main-grid">
-                    <!-- Left Column: Settings -->
-                    <div class="settings-column">
-                        <div class="card">
-                            <h2>Settings</h2>
-
-                            <div class="control-group">
-                                <label for="fontFile"
-                                    >Font File (.ttf, .otf):</label
-                                >
-                                <input
-                                    type="file"
-                                    id="fontFile"
-                                    accept=".ttf,.otf"
-                                />
-                            </div>
-
-                            <div id="fontInfo"></div>
-
-                            <div class="control-group">
-                                <label for="fontSize">Font Size:</label>
-                                <input
-                                    type="number"
-                                    id="fontSize"
-                                    value="28"
-                                    min="8"
-                                    max="128"
-                                />
-                            </div>
-
-                            <div class="control-group">
-                                <label for="charSpacing">Char Spacing:</label>
-                                <input
-                                    type="number"
-                                    id="charSpacing"
-                                    value="0"
-                                    min="-10"
-                                    max="32"
-                                />
-                            </div>
-
-                            <div class="control-group">
-                                <label for="lineSpacing">Line Spacing:</label>
-                                <input
-                                    type="number"
-                                    id="lineSpacing"
-                                    value="0"
-                                    min="-10"
-                                    max="32"
-                                />
-                            </div>
-
-                            <div class="control-group">
-                                <label for="lightnessThreshold"
-                                    >Boldness:</label
-                                >
-                                <div class="slider-container">
-                                    <input
-                                        type="range"
-                                        id="lightnessThreshold"
-                                        min="1"
-                                        max="254"
-                                        value="127"
-                                    />
-                                    <span id="lightnessThresholdValue"
-                                        >127</span
-                                    >
-                                </div>
-                            </div>
-
-                            <div class="control-group">
-                                <label
-                                    for="isVerticalFont"
-                                    class="checkbox-label"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        id="isVerticalFont"
-                                    />
-                                    Vertical Font
-                                </label>
-                            </div>
-
-                            <div class="control-group">
-                                <label
-                                    for="chkRenderBorder"
-                                    class="checkbox-label"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        id="chkRenderBorder"
-                                    />
-                                    Render Border
-                                </label>
-                            </div>
-
-                            <div class="control-group">
-                                <label
-                                    for="chkRenderAntiAlias"
-                                    class="checkbox-label"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        id="chkRenderAntiAlias"
-                                        checked
-                                    />
-                                    Anti-Aliasing
-                                </label>
-                            </div>
-
-                            <div class="control-group">
-                                <label
-                                    for="chkRenderGridFit"
-                                    class="checkbox-label"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        id="chkRenderGridFit"
-                                        checked
-                                    />
-                                    Grid Fitting
-                                </label>
-                            </div>
-
-                            <div class="control-group">
-                                <label
-                                    for="chkOpticalAlign"
-                                    class="checkbox-label"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        id="chkOpticalAlign"
-                                        checked
-                                    />
-                                    Optical Alignment
-                                </label>
-                            </div>
-
-                            <div class="control-group">
-                                <label for="previewText">Preview Text:</label>
-                                <textarea
-                                    id="previewText"
-                                    rows="3"
-                                    maxlength="500"
-                                >
-Pan Deklewski, fabrykant powozów, który majątek i stanowisko zawdzięczał wytrwałej pracy w jednym fachu, tudzież radca Węgrowicz, który od dwudziestu lat był członkiem-opiekunem jednego i tego samego Towarzystwa Dobroczynności, znali S. Wokulskiego najdawniej i najgłośniej przepowiadali mu ruinę. — Na ruinie bowiem i niewypłacalności — mówił pan Deklewski — musi skończyć człowiek, który nie pilnuje się jednego fachu i nie umie uszanować darów łaskawej fortuny.</textarea
-                                >
-                                <div class="character-count">
-                                    <span id="previewCount" aria-live="polite"
-                                        >500 characters remaining</span
-                                    >
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Previews -->
-                    <div class="preview-column">
-                        <div class="card">
-                            <h2>Preview</h2>
-
-                            <div class="canvas-group">
-                                <div class="canvas-container">
-                                    <label>Glyph Preview:</label>
-                                    <canvas
-                                        id="glyphCanvas"
-                                        width="128"
-                                        height="128"
-                                    ></canvas>
-                                </div>
-                                <div class="canvas-container">
-                                    <label>Text Preview:</label>
-                                    <canvas
-                                        id="previewCanvas"
-                                        height="128"
-                                    ></canvas>
-                                </div>
-                            </div>
-
-                            <div class="ereader-preview-section">
-                                <h3>E-Reader Preview</h3>
-                                <p class="preview-description">
-                                    Live 1:1 preview (4.3" screen, 800×480 @ 220
-                                    PPI)
-                                </p>
-
-                                <div class="scale-control">
-                                    <label for="displayScale"
-                                        >Display Scale:</label
-                                    >
-                                    <div class="scale-input-group">
-                                        <input
-                                            type="range"
-                                            id="displayScale"
-                                            min="50"
-                                            max="200"
-                                            value="100"
-                                        />
-                                        <span id="displayScaleValue">100%</span>
-                                    </div>
-                                    <div class="scale-buttons">
-                                        <button
-                                            id="saveCalibration"
-                                            class="btn-success"
-                                        >
-                                            Save Calibration
-                                        </button>
-                                        <button
-                                            id="resetDisplayScale"
-                                            class="btn-secondary"
-                                        >
-                                            Reset
-                                        </button>
-                                    </div>
-                                    <small
-                                        id="calibrationStatus"
-                                        class="help-text"
-                                    >
-                                        Adjust slider to match your screen size
-                                    </small>
-                                </div>
-
-                                <div class="canvas-preview-wrapper">
-                                    <div id="canvasWrapper">
-                                        <canvas
-                                            id="realSizeCanvas"
-                                            width="480"
-                                            height="800"
-                                        ></canvas>
-                                    </div>
-                                    <button
-                                        id="exportPreviewBtn"
-                                        class="btn-primary"
-                                    >
-                                        Export as PNG
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Full Width: Font Info & Actions -->
+    <main>
+        <div class="main-grid">
+            <!-- 左カラム: 設定 -->
+            <div class="settings-column">
                 <div class="card">
-                    <h2>Generate & Save</h2>
+                    <h2>⚙ 設定</h2>
 
-                    <div class="action-group">
-                        <button id="convertBtn" class="btn-primary btn-large">
-                            Convert to .BIN
-                        </button>
-                        <p id="progressMsg"></p>
+                    <div class="control-group">
+                        <label for="fontFile">フォントファイル (.ttf, .otf)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fontFile" accept=".ttf,.otf" />
+                            <div class="file-input-display">
+                                <span>📁</span>
+                                <span class="file-label">ファイルを選択...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="fontInfo"></div>
+
+                    <div class="num-grid">
+                        <div class="control-group">
+                            <label for="fontSize">フォントサイズ</label>
+                            <div class="num-input-wrap">
+                                <input type="number" id="fontSize" value="28" min="8" max="128" />
+                                <span class="unit">px</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="charSpacing">文字間隔</label>
+                            <div class="num-input-wrap">
+                                <input type="number" id="charSpacing" value="0" min="-10" max="32" />
+                                <span class="unit">px</span>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="lineSpacing">行間隔</label>
+                            <div class="num-input-wrap">
+                                <input type="number" id="lineSpacing" value="0" min="-10" max="32" />
+                                <span class="unit">px</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="control-group">
-                        <h3>Publish to Gallery</h3>
-                        <p class="gallery-description">
-                            Submit your font to the gallery. After approval, it
-                            will be shown in the
-                            <a href="gallery.html">gallery</a>.
-                        </p>
-                        <label for="submitterName">Your name (optional):</label>
-                        <input
-                            type="text"
-                            id="submitterName"
-                            placeholder="Anonymous"
-                        />
-                        <div class="gallery-actions">
-                            <button id="saveServerBtn" class="btn-primary">
-                                Save to Gallery
-                            </button>
-                            <span id="saveServerStatus"></span>
+                        <label for="lightnessThreshold">太さ（ボールドネス）<span class="lbl-hint">低い値 = 細字 / 高い値 = 太字</span></label>
+                        <div class="slider-container">
+                            <span class="slider-edge">細</span>
+                            <input type="range" id="lightnessThreshold" min="1" max="254" value="127" />
+                            <span class="slider-edge">太</span>
+                            <span id="lightnessThresholdValue">127</span>
+                        </div>
+                    </div>
+
+                    <div class="toggle-section">
+                        <div class="toggle-section-title">レンダリング設定</div>
+
+                        <div class="toggle-row">
+                            <label for="isVerticalFont" class="toggle-label">
+                                <input type="checkbox" id="isVerticalFont" />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                <span>縦書きフォント</span>
+                            </label>
+                            <span class="toggle-desc">90度回転して保存</span>
+                        </div>
+                        <div class="toggle-row">
+                            <label for="chkRenderBorder" class="toggle-label">
+                                <input type="checkbox" id="chkRenderBorder" />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                <span>ボーダーを描画</span>
+                            </label>
+                            <span class="toggle-desc">.binファイルに枠線を追加</span>
+                        </div>
+                        <div class="toggle-row">
+                            <label for="chkRenderAntiAlias" class="toggle-label">
+                                <input type="checkbox" id="chkRenderAntiAlias" checked />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                <span>アンチエイリアス</span>
+                            </label>
+                            <span class="toggle-desc">滑らかなエッジ処理</span>
+                        </div>
+                        <div class="toggle-row">
+                            <label for="chkRenderGridFit" class="toggle-label">
+                                <input type="checkbox" id="chkRenderGridFit" checked />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                <span>グリッドフィッティング</span>
+                            </label>
+                            <span class="toggle-desc">ピクセルグリッドに整列</span>
+                        </div>
+                        <div class="toggle-row">
+                            <label for="chkOpticalAlign" class="toggle-label">
+                                <input type="checkbox" id="chkOpticalAlign" checked />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                <span>オプティカル整列</span>
+                            </label>
+                            <span class="toggle-desc">スマートな水平位置調整</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group preview-text-group">
+                        <label for="previewText">プレビューテキスト<span class="lbl-hint">日本語対応</span></label>
+                        <textarea id="previewText" rows="4" maxlength="500">吾輩は猫である。名前はまだ無い。どこで生れたか頓と見当がつかぬ。何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している。</textarea>
+                        <div class="character-count">
+                            <span id="previewCount" aria-live="polite">残り500文字</span>
                         </div>
                     </div>
                 </div>
-            </main>
+            </div>
 
-            <footer>
-                <p>
-                    Based on the original
-                    <a
-                        href="https://gitee.com/ZYFDroid/xteink-toolkit"
-                        target="_blank"
-                        >XTEinkToolkit</a
-                    >. Made in 🇵🇱 by
-                    <a
-                        href="https://github.com/lakafior/XTEink-Web-Font-Toolkit"
-                        target="_blank"
-                        >Lakafior.</a
-                    >
-                </p>
-            </footer>
+            <!-- 右カラム: プレビュー -->
+            <div class="preview-column">
+                <div class="card">
+                    <h2>👁 プレビュー</h2>
+
+                    <div class="canvas-group">
+                        <div class="canvas-container">
+                            <label>グリフプレビュー</label>
+                            <canvas id="glyphCanvas" width="128" height="128"></canvas>
+                        </div>
+                        <div class="canvas-container wide">
+                            <label>テキストプレビュー</label>
+                            <canvas id="previewCanvas" height="128"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="ereader-preview-section">
+                        <h3>📖 E-Readerプレビュー</h3>
+                        <p class="preview-description">実寸プレビュー（4.3インチ画面、800×480 @ 220 PPI）</p>
+
+                        <div class="scale-control">
+                            <label for="displayScale">表示スケール</label>
+                            <div class="scale-input-group">
+                                <input type="range" id="displayScale" min="50" max="200" value="100" />
+                                <span id="displayScaleValue">100%</span>
+                            </div>
+                            <div class="scale-buttons">
+                                <button id="saveCalibration" class="btn-success">キャリブレーション保存</button>
+                                <button id="resetDisplayScale" class="btn-secondary">リセット</button>
+                            </div>
+                            <small id="calibrationStatus" class="help-text">スライダーを動かして実際の画面サイズに合わせてください</small>
+                        </div>
+
+                        <div class="canvas-preview-wrapper">
+                            <div id="canvasWrapper">
+                                <canvas id="realSizeCanvas" width="480" height="800"></canvas>
+                            </div>
+                            <button id="exportPreviewBtn" class="btn-secondary btn-auto">
+                                📷 PNGで書き出し
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <script type="module" src="app.js"></script>
-    </body>
+
+        <!-- 変換カード -->
+        <div class="card convert-card">
+            <h2>⚡ 変換 &amp; 保存</h2>
+            <div class="action-group">
+                <button id="convertBtn" class="btn-convert">
+                    ▶ &nbsp;.BINファイルに変換
+                </button>
+                <p id="progressMsg"></p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>
+            オリジナル: <a href="https://gitee.com/ZYFDroid/xteink-toolkit" target="_blank">XTEinkToolkit</a>
+            &nbsp;→&nbsp;
+            <a href="https://github.com/lakafior/XTEink-Web-Font-Maker" target="_blank">lakafior</a> によるウェブ版
+            &nbsp;→&nbsp;
+            <a href="https://github.com/alohakun/Xteink-Web-Font-Maker" target="_blank">alohakun</a> によるフォーク（日本語UI・カスタマイズ版）
+            &nbsp;|&nbsp; GPL-3.0
+        </p>
+    </footer>
+</div>
+
+<script type="module" src="app.js"></script>
+<script>
+    // ファイル名表示
+    document.getElementById('fontFile').addEventListener('change', function(e) {
+        const label = document.querySelector('.file-label');
+        label.textContent = e.target.files[0]?.name || 'ファイルを選択...';
+    });
+</script>
+</body>
 </html>

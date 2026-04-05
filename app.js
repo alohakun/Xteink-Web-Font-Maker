@@ -1099,6 +1099,7 @@ function base64EncodeUnicode(str) {
 
 async function saveToServer() {
   const status = document.getElementById("saveServerStatus");
+  if (!status) return;
   status.textContent = "Generating .bin...";
   const res = await convertFontToBin();
   if (!res) {
@@ -1168,7 +1169,7 @@ async function saveToServer() {
   const style = activeFont ? activeFont.style_name : "Unknown";
   const previewText = document.getElementById("previewText").value;
   const submitter =
-    document.getElementById("submitterName").value.trim() || "Anonymous";
+    (document.getElementById("submitterName")?.value || "").trim() || "Anonymous";
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const slug = slugify(`${family}-${style}-${timestamp}`);
@@ -1250,7 +1251,7 @@ async function saveToServer() {
 
 document
   .getElementById("saveServerBtn")
-  .addEventListener("click", saveToServer);
+  ?.addEventListener("click", saveToServer);
 
 function updateControlStates() {
   const isAntiAlias = document.getElementById("chkRenderAntiAlias").checked;
@@ -1320,7 +1321,7 @@ const PREVIEW_MAX = 500;
 function updatePreviewCount() {
   const remaining =
     PREVIEW_MAX - (previewEl.value ? previewEl.value.length : 0);
-  previewCount.textContent = `${remaining} characters remaining`;
+  previewCount.textContent = `残り${remaining}文字`;
 }
 
 // prevent paste that exceeds maxlength
