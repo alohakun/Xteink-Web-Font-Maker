@@ -36,6 +36,48 @@
                 <div class="card">
                     <h2>⚙ 設定</h2>
 
+                    <!-- プリセット -->
+                    <div class="control-group">
+                        <label>プリセットフォント</label>
+                        <div class="preset-grid" id="presetGrid">
+                            <button class="preset-btn" data-file="fonts/LINESeedJP_TTF_Bd.ttf" data-size="20" data-char="0" data-line="6">
+                                <span class="preset-name">LINE Seed JP</span>
+                                <span class="preset-style">Bold</span>
+                            </button>
+                            <button class="preset-btn" data-file="fonts/LINESeedJP_TTF_Rg.ttf" data-size="20" data-char="0" data-line="6">
+                                <span class="preset-name">LINE Seed JP</span>
+                                <span class="preset-style">Regular</span>
+                            </button>
+                            <button class="preset-btn" data-file="fonts/NotoSansJP-VariableFont_wght.ttf" data-size="20" data-char="0" data-line="4">
+                                <span class="preset-name">Noto Sans JP</span>
+                                <span class="preset-style">Regular</span>
+                            </button>
+                            <button class="preset-btn" data-file="fonts/NotoSerifJP-VariableFont_wght.ttf" data-size="20" data-char="0" data-line="4">
+                                <span class="preset-name">Noto Serif JP</span>
+                                <span class="preset-style">Regular</span>
+                            </button>
+                            <button class="preset-btn" data-file="fonts/BIZUDPGothic-Regular.ttf" data-size="20" data-char="0" data-line="4">
+                                <span class="preset-name">BIZ UDPGothic</span>
+                                <span class="preset-style">Regular</span>
+                            </button>
+                            <button class="preset-btn" data-file="fonts/BIZUDPGothic-Bold.ttf" data-size="20" data-char="0" data-line="4">
+                                <span class="preset-name">BIZ UDPGothic</span>
+                                <span class="preset-style">Bold</span>
+                            </button>
+                            <button class="preset-btn" data-file="fonts/BIZUDPMincho-Regular.ttf" data-size="20" data-char="0" data-line="4">
+                                <span class="preset-name">BIZ UDPMincho</span>
+                                <span class="preset-style">Regular</span>
+                            </button>
+                            <button class="preset-btn" data-file="fonts/BIZUDPMincho-Bold.ttf" data-size="20" data-char="0" data-line="4">
+                                <span class="preset-name">BIZ UDPMincho</span>
+                                <span class="preset-style">Bold</span>
+                            </button>
+                        </div>
+                        <div id="presetStatus" class="preset-status"></div>
+                    </div>
+
+                    <div class="preset-divider">または手動で選択</div>
+
                     <div class="control-group">
                         <label for="fontFile">フォントファイル (.ttf, .otf)</label>
                         <div class="file-input-wrapper">
@@ -214,6 +256,54 @@
     document.getElementById('fontFile').addEventListener('change', function(e) {
         const label = document.querySelector('.file-label');
         label.textContent = e.target.files[0]?.name || 'ファイルを選択...';
+        // 手動選択時はプリセット選択を解除
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    });
+
+    // プリセット処理
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            // アクティブ切り替え
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const filePath = btn.dataset.file;
+            const fontSize = parseInt(btn.dataset.size);
+            const charSpacing = parseInt(btn.dataset.char);
+            const lineSpacing = parseInt(btn.dataset.line);
+            const statusEl = document.getElementById('presetStatus');
+
+            statusEl.textContent = '読み込み中...';
+
+            try {
+                const res = await fetch(filePath);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const arrayBuffer = await res.arrayBuffer();
+                const fontName = btn.querySelector('.preset-name').textContent
+                    + ' ' + btn.querySelector('.preset-style').textContent;
+
+                // フォントファイルをFileオブジェクトとして fontFile inputに渡す
+                const file = new File([arrayBuffer], filePath.split('/').pop(), { type: 'font/ttf' });
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fontFileInput = document.getElementById('fontFile');
+                fontFileInput.files = dt.files;
+                document.querySelector('.file-label').textContent = file.name;
+
+                // 設定値を反映
+                document.getElementById('fontSize').value = fontSize;
+                document.getElementById('charSpacing').value = charSpacing;
+                document.getElementById('lineSpacing').value = lineSpacing;
+
+                // fontFile changeイベントを発火してapp.jsのフォント読み込みを起動
+                fontFileInput.dispatchEvent(new Event('change'));
+
+                statusEl.textContent = `✓ ${fontName} を読み込みました`;
+            } catch (e) {
+                statusEl.textContent = `エラー: ${e.message}`;
+                btn.classList.remove('active');
+            }
+        });
     });
 </script>
 </body>
