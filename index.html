@@ -228,8 +228,8 @@
         label.textContent = e.target.files[0]?.name || 'ファイルを選択...';
     });
 
-    // プリセット読み込み関数
-    async function loadPreset(selectEl) {
+    // プリセット読み込み関数（リロード方式）
+    async function loadPreset(selectEl, isAutoLoad) {
         const option = selectEl.options[selectEl.selectedIndex];
         const filePath = selectEl.value;
         const fontSize = parseInt(option.dataset.size);
@@ -244,7 +244,6 @@
             const res = await fetch(filePath);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            // ストリーミングで読み込みメモリ効率を上げる
             const blob = await res.blob();
             const fileName = filePath.split('/').pop();
             const file = new File([blob], fileName, { type: 'font/ttf' });
@@ -259,22 +258,45 @@
             document.getElementById('charSpacing').value = charSpacing;
             document.getElementById('lineSpacing').value = lineSpacing;
 
-            // changeイベントを発火してapp.jsのフォント読み込みを起動
             fontFileInput.dispatchEvent(new Event('change'));
-
             statusEl.textContent = `✓ ${option.text.replace('（デフォルト）', '')} を読み込みました`;
+
+            // 次回切り替え用に現在の選択を保存
+            localStorage.setItem('xteink_preset', filePath);
         } catch (e) {
             statusEl.textContent = `エラー: ${e.message}`;
             console.error('プリセット読み込みエラー:', e);
         }
     }
 
-    // プルダウン変更時
     const presetSelect = document.getElementById('presetSelect');
-    presetSelect.addEventListener('change', () => loadPreset(presetSelect));
 
-    // 注: 自動読み込みは無効（OOM対策）
-    // window.addEventListener('load', () => loadPreset(presetSelect));
+    // プルダウン変更時：別フォントへの切り替えはリロード
+    presetSelect.addEventListener('change', () => {
+        const filePath = presetSelect.value;
+        const prevPath = localStorage.getItem('xteink_preset') || presetSelect.options[0].value;
+
+        if (filePath !== prevPath) {
+            // 選択を保存してリロード
+            localStorage.setItem('xteink_preset', filePath);
+            location.reload();
+        }
+    });
+
+    // ページ読み込み時：localStorageから前回の選択を復元して読み込む
+    window.addEventListener('load', () => {
+        const saved = localStorage.getItem('xteink_preset');
+        if (saved) {
+            // プルダウンの選択を復元
+            for (let i = 0; i < presetSelect.options.length; i++) {
+                if (presetSelect.options[i].value === saved) {
+                    presetSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        loadPreset(presetSelect, true);
+    });
 </script>
 </body>
 </html>
