@@ -1486,12 +1486,21 @@ function updateDisplayScale() {
 
   const scale = parseInt(displayScaleSlider.value, 10) / 100;
 
-  // canvasのCSS表示サイズをスケールに合わせて変更（transform不使用）
+  // コンテナ幅に合わせて収まるようにスケール表示
+  const wrapper = document.getElementById("canvasWrapper");
   const baseW = realSizeCanvas.width;   // 480
   const baseH = realSizeCanvas.height;  // 800
-  realSizeCanvas.style.width = Math.round(baseW * scale) + "px";
-  realSizeCanvas.style.height = Math.round(baseH * scale) + "px";
+  const scaledW = Math.round(baseW * scale);
+  const scaledH = Math.round(baseH * scale);
+
+  // wrapperの実際の表示幅を取得して、はみ出す場合は縮小
+  const maxW = wrapper ? wrapper.clientWidth - 4 : scaledW;
+  const fitScale = scaledW > maxW ? maxW / baseW : scale;
+
+  realSizeCanvas.style.width = Math.round(baseW * fitScale) + "px";
+  realSizeCanvas.style.height = Math.round(baseH * fitScale) + "px";
   realSizeCanvas.style.transform = "";
+  if (wrapper) wrapper.style.height = Math.round(baseH * fitScale) + "px";
 
   if (displayScaleValue) {
     displayScaleValue.textContent = (scale * 100).toFixed(0) + "%";
