@@ -601,79 +601,97 @@ function renderPreviewText() {
   ];
   const glyphs = ft.LoadGlyphs(charCodes, loadFlags);
 
+  const isVerticalPreview = document.getElementById("isVerticalFont").checked;
   const lines = previewText.split(/\r?\n/);
-  let lineY = 0;
 
-  for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-    const line = lines[lineIdx];
-    let charX = 0;
-    lineY += boxHeight;
-
-    if (lineY - boxHeight > canvas.height) break;
-
-    for (let i = 0; i < line.length; i++) {
-      const charCode = line.charCodeAt(i);
-      const char = line[i];
-
-      // Auto word wrap: if character doesn't fit, move to next line
-      if (charX + boxWidth > canvas.width) {
-        charX = 0;
-        lineY += boxHeight;
-        if (lineY - boxHeight > canvas.height) break;
-      }
-
-      if (glyphs.has(charCode)) {
-        if (shouldRenderBorder) {
-          ctx.strokeStyle = "#000";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(
-            charX + 0.5,
-            lineY - boxHeight + 0.5,
-            boxWidth - 1,
-            boxHeight - 1,
-          );
+  if (isVerticalPreview) {
+    // 縦書きプレビュー: 右から左へ列、上から下へ文字
+    let colX = canvas.width - boxWidth;
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx];
+      let charY = 0;
+      if (colX < 0) break;
+      for (let i = 0; i < line.length; i++) {
+        const charCode = line.charCodeAt(i);
+        const char = line[i];
+        if (charY + boxHeight > canvas.height) {
+          colX -= boxWidth;
+          charY = 0;
+          if (colX < 0) break;
         }
-
-        const glyph = glyphs.get(charCode);
-        const bitmap = glyph.bitmap;
-
-        if (
-          bitmap.width > 0 &&
-          bitmap.rows > 0 &&
-          bitmap.imagedata &&
-          !isWhitespaceOrInvisible(charCode)
-        ) {
-          let dx = charX + Math.floor((boxWidth - bitmap.width) / 2);
-
-          if (useOpticalAlign) {
-            // For bin file compatibility, treat each glyph as first-in-line
-
-            // (no pseudo-kerning). This ensures the preview matches the .bin output.
-
-            dx = charX + getOpticalDx(char, bitmap.width, boxWidth, true);
+        if (glyphs.has(charCode)) {
+          if (shouldRenderBorder) {
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
           }
-
-          const lineTop = lineY - boxHeight;
-          const baselineOffset = computeBaselineOffset(boxHeight, lineSpacing);
-          const baseline = lineTop + baselineOffset;
-          const dy = baseline - glyph.bitmap_top;
-
-          const sourceData = bitmap.imagedata.data;
-          ctx.fillStyle = "#000";
-          for (let y = 0; y < bitmap.rows; y++) {
-            for (let x = 0; x < bitmap.width; x++) {
-              const j = (y * bitmap.width + x) * 4;
-              if (shouldRenderPixel(sourceData, j, threshold)) {
-                ctx.fillRect(dx + x, dy + y, 1, 1);
+          const glyph = glyphs.get(charCode);
+          const bitmap = glyph.bitmap;
+          if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
+            const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
+            const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+            const sourceData = bitmap.imagedata.data;
+            ctx.fillStyle = "#000";
+            for (let y = 0; y < bitmap.rows; y++) {
+              for (let x = 0; x < bitmap.width; x++) {
+                if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                  ctx.fillRect(dx + x, dy + y, 1, 1);
+                }
               }
             }
           }
+          charY += boxHeight;
         }
-        charX += boxWidth;
+      }
+      colX -= boxWidth;
+    }
+  } else {
+    // 横書きプレビュー
+    let lineY = 0;
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx];
+      let charX = 0;
+      lineY += boxHeight;
+      if (lineY - boxHeight > canvas.height) break;
+      for (let i = 0; i < line.length; i++) {
+        const charCode = line.charCodeAt(i);
+        const char = line[i];
+        if (charX + boxWidth > canvas.width) {
+          charX = 0;
+          lineY += boxHeight;
+          if (lineY - boxHeight > canvas.height) break;
+        }
+        if (glyphs.has(charCode)) {
+          if (shouldRenderBorder) {
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(charX + 0.5, lineY - boxHeight + 0.5, boxWidth - 1, boxHeight - 1);
+          }
+          const glyph = glyphs.get(charCode);
+          const bitmap = glyph.bitmap;
+          if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
+            let dx = charX + Math.floor((boxWidth - bitmap.width) / 2);
+            if (useOpticalAlign) {
+              dx = charX + getOpticalDx(char, bitmap.width, boxWidth, true);
+            }
+            const dy = (lineY - boxHeight) + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+            const sourceData = bitmap.imagedata.data;
+            ctx.fillStyle = "#000";
+            for (let y = 0; y < bitmap.rows; y++) {
+              for (let x = 0; x < bitmap.width; x++) {
+                if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                  ctx.fillRect(dx + x, dy + y, 1, 1);
+                }
+              }
+            }
+          }
+          charX += boxWidth;
+        }
       }
     }
   }
 }
+
 
 /**
  * Adds pHYs chunk to PNG to set DPI metadata
@@ -811,71 +829,92 @@ function renderRealSizePreview() {
   ];
   const glyphs = ft.LoadGlyphs(charCodes, loadFlags);
 
+  const isVerticalPreview = document.getElementById("isVerticalFont").checked;
   const lines = previewText.split(/\r?\n/);
-  let lineY = 0;
 
-  for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-    const line = lines[lineIdx];
-    let charX = 0;
-    lineY += boxHeight;
-
-    if (lineY - boxHeight > canvas.height) break;
-
-    for (let i = 0; i < line.length; i++) {
-      const charCode = line.charCodeAt(i);
-      const char = line[i];
-
-      // Auto word wrap: if character doesn't fit, move to next line
-      if (charX + boxWidth > canvas.width) {
-        charX = 0;
-        lineY += boxHeight;
-        if (lineY - boxHeight > canvas.height) break;
-      }
-
-      if (glyphs.has(charCode)) {
-        if (shouldRenderBorder) {
-          ctx.strokeStyle = "#000";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(
-            charX + 0.5,
-            lineY - boxHeight + 0.5,
-            boxWidth - 1,
-            boxHeight - 1,
-          );
+  if (isVerticalPreview) {
+    // 縦書きプレビュー: 右から左へ列、上から下へ文字
+    let colX = canvas.width - boxWidth;
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx];
+      let charY = 0;
+      if (colX < 0) break;
+      for (let i = 0; i < line.length; i++) {
+        const charCode = line.charCodeAt(i);
+        const char = line[i];
+        if (charY + boxHeight > canvas.height) {
+          colX -= boxWidth;
+          charY = 0;
+          if (colX < 0) break;
         }
-
-        const glyph = glyphs.get(charCode);
-        const bitmap = glyph.bitmap;
-
-        if (
-          bitmap.width > 0 &&
-          bitmap.rows > 0 &&
-          bitmap.imagedata &&
-          !isWhitespaceOrInvisible(charCode)
-        ) {
-          let dx = charX + Math.floor((boxWidth - bitmap.width) / 2);
-
-          if (useOpticalAlign) {
-            dx = charX + getOpticalDx(char, bitmap.width, boxWidth, true);
+        if (glyphs.has(charCode)) {
+          if (shouldRenderBorder) {
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
           }
-
-          const lineTop = lineY - boxHeight;
-          const baselineOffset = computeBaselineOffset(boxHeight, lineSpacing);
-          const baseline = lineTop + baselineOffset;
-          const dy = baseline - glyph.bitmap_top;
-
-          const sourceData = bitmap.imagedata.data;
-          ctx.fillStyle = "#000";
-          for (let y = 0; y < bitmap.rows; y++) {
-            for (let x = 0; x < bitmap.width; x++) {
-              const j = (y * bitmap.width + x) * 4;
-              if (shouldRenderPixel(sourceData, j, threshold)) {
-                ctx.fillRect(dx + x, dy + y, 1, 1);
+          const glyph = glyphs.get(charCode);
+          const bitmap = glyph.bitmap;
+          if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
+            const dx = colX + Math.floor((boxWidth - bitmap.width) / 2);
+            const dy = charY + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+            const sourceData = bitmap.imagedata.data;
+            ctx.fillStyle = "#000";
+            for (let y = 0; y < bitmap.rows; y++) {
+              for (let x = 0; x < bitmap.width; x++) {
+                if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                  ctx.fillRect(dx + x, dy + y, 1, 1);
+                }
               }
             }
           }
+          charY += boxHeight;
         }
-        charX += boxWidth;
+      }
+      colX -= boxWidth;
+    }
+  } else {
+    // 横書きプレビュー
+    let lineY = 0;
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx];
+      let charX = 0;
+      lineY += boxHeight;
+      if (lineY - boxHeight > canvas.height) break;
+      for (let i = 0; i < line.length; i++) {
+        const charCode = line.charCodeAt(i);
+        const char = line[i];
+        if (charX + boxWidth > canvas.width) {
+          charX = 0;
+          lineY += boxHeight;
+          if (lineY - boxHeight > canvas.height) break;
+        }
+        if (glyphs.has(charCode)) {
+          if (shouldRenderBorder) {
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(charX + 0.5, lineY - boxHeight + 0.5, boxWidth - 1, boxHeight - 1);
+          }
+          const glyph = glyphs.get(charCode);
+          const bitmap = glyph.bitmap;
+          if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
+            let dx = charX + Math.floor((boxWidth - bitmap.width) / 2);
+            if (useOpticalAlign) {
+              dx = charX + getOpticalDx(char, bitmap.width, boxWidth, true);
+            }
+            const dy = (lineY - boxHeight) + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+            const sourceData = bitmap.imagedata.data;
+            ctx.fillStyle = "#000";
+            for (let y = 0; y < bitmap.rows; y++) {
+              for (let x = 0; x < bitmap.width; x++) {
+                if (shouldRenderPixel(sourceData, (y * bitmap.width + x) * 4, threshold)) {
+                  ctx.fillRect(dx + x, dy + y, 1, 1);
+                }
+              }
+            }
+          }
+          charX += boxWidth;
+        }
       }
     }
   }
