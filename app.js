@@ -619,8 +619,6 @@ function renderPreviewText() {
       for (let i = 0; i < line.length; i++) {
         const charCode = line.charCodeAt(i);
         const char = line[i];
-        const charCode = line.charCodeAt(i);
-        const char = line[i];
         const needsRotate = VERTICAL_ROTATE_CHARS.has(charCode);
         if (charY + boxHeight > canvas.height) {
           colX -= boxWidth;
