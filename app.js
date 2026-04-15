@@ -644,6 +644,7 @@ function renderPreviewText() {
 
         if (VERTICAL_ROTATE_CHARS.has(charCode)) {
           // 「ー」などは90度回転
+          console.log(`rotate: charCode=${charCode} char=${char} bitmap=${bitmap.width}x${bitmap.rows}`);
           const offC = document.createElement("canvas");
           offC.width = bitmap.width;
           offC.height = bitmap.rows;
