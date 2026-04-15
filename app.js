@@ -627,7 +627,7 @@ function renderPreviewText() {
       }
       if (colX < 0) break;
 
-      if (!glyphs.has(charCode)) { charY += boxHeight; continue; }
+      if (!glyphs.has(charCode)) { console.log('glyph missing:', charCode, char); charY += boxHeight; continue; }
 
       if (shouldRenderBorder) {
         ctx.strokeStyle = "#000";
