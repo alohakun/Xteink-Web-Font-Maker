@@ -53,8 +53,15 @@ const VERTICAL_SHIFT_CHARS = new Set([
   0x300F,  // 』
 ]);
 
-// 後方互換性のため空マップを維持
-const VERTICAL_CHAR_MAP = new Map();
+// 縦書き時のグリフ置換マップ（横向き文字→縦向きグリフ）
+const VERTICAL_CHAR_MAP = new Map([
+  [0x30FC, 0xFE31],  // ー → ︱
+  [0x2015, 0xFE31],  // ― → ︱
+  [0xFF0D, 0xFE31],  // － → ︱
+  [0xFF5E, 0xFE34],  // ～ → ︴
+  [0x2026, 0xFE19],  // … → ︙
+  [0x2025, 0xFE19],  // ‥ → ︙
+]);
 
 function getVerticalCharCode(charCode) {
   return VERTICAL_CHAR_MAP.get(charCode) ?? charCode;
@@ -627,7 +634,11 @@ function renderPreviewText() {
       }
       if (colX < 0) break;
 
-      if (!glyphs.has(charCode)) { console.log('glyph missing:', charCode, char); charY += boxHeight; continue; }
+      // 縦書き用グリフに置換
+      const renderCode = (VERTICAL_CHAR_MAP.has(charCode) && glyphs.has(VERTICAL_CHAR_MAP.get(charCode)))
+        ? VERTICAL_CHAR_MAP.get(charCode) : charCode;
+
+      if (!glyphs.has(renderCode)) { charY += boxHeight; continue; }
 
       if (shouldRenderBorder) {
         ctx.strokeStyle = "#000";
@@ -635,17 +646,15 @@ function renderPreviewText() {
         ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
       }
 
-      const glyph = glyphs.get(charCode);
+      const glyph = glyphs.get(renderCode);
       const bitmap = glyph.bitmap;
 
       if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
         const sourceData = bitmap.imagedata.data;
         ctx.fillStyle = "#000";
 
-        if (charCode === 0x30FC) console.log("ー found! VERTICAL_ROTATE_CHARS.has:", VERTICAL_ROTATE_CHARS.has(charCode), "charCode type:", typeof charCode, "value:", charCode);
         if (VERTICAL_ROTATE_CHARS.has(charCode)) {
-          // 「ー」などは90度回転
-          console.log(`rotate: charCode=${charCode} char=${char} bitmap=${bitmap.width}x${bitmap.rows}`);
+          // 回転が必要な文字（置換グリフがない場合のフォールバック）
           const offC = document.createElement("canvas");
           offC.width = bitmap.width;
           offC.height = bitmap.rows;
@@ -875,6 +884,7 @@ function renderRealSizePreview() {
   const extraCodes2 = isVerticalPreview ? [...new Set(VERTICAL_CHAR_MAP.values())] : [];
   const charCodes = [...new Set([...baseCodes2, ...extraCodes2])];
   const glyphs = ft.LoadGlyphs(charCodes, loadFlags);
+  // ← charCodes/glyphs loaded
 
   const lines = previewText.split(/\r?\n/);
 
@@ -902,14 +912,18 @@ function renderRealSizePreview() {
         ctx.strokeRect(colX + 0.5, charY + 0.5, boxWidth - 1, boxHeight - 1);
       }
 
-      const glyph = glyphs.get(charCode);
+      // 縦書き用グリフに置換
+      const renderCode3 = (VERTICAL_CHAR_MAP.has(charCode) && glyphs.has(VERTICAL_CHAR_MAP.get(charCode)))
+        ? VERTICAL_CHAR_MAP.get(charCode) : charCode;
+      if (!glyphs.has(renderCode3)) { charY += boxHeight; continue; }
+      const glyph = glyphs.get(renderCode3);
       const bitmap = glyph.bitmap;
 
       if (bitmap.width > 0 && bitmap.rows > 0 && bitmap.imagedata && !isWhitespaceOrInvisible(charCode)) {
         const sourceData = bitmap.imagedata.data;
         ctx.fillStyle = "#000";
 
-        if (VERTICAL_ROTATE_CHARS.has(charCode)) {
+        if (VERTICAL_ROTATE_CHARS.has(charCode) && renderCode3 === charCode) {
           const offC = document.createElement("canvas");
           offC.width = bitmap.width;
           offC.height = bitmap.rows;
