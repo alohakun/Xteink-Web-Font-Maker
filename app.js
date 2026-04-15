@@ -314,7 +314,7 @@ const optical_offsets = {
   7: 0.06、
 
   // ============================================
-  // WĄSKIE ZNAKI - ニュートラルなラブミニマル
+  // WĄSKIE ZNAKI - ニュートラルなラブ・ミニマル
   // ============================================
   // ウォンスキー ズナキ ウィグルダジョン ナジュレピエ グディ シン ウィセントロワネ。
   // 問題 z "ill" nie jest do rozwiązania przez offset - to kwestia
@@ -730,9 +730,11 @@ function renderPreviewText() {
               dx = charX + getOpticalDx(char, bitmap.width, boxWidth, true);
             }
             // 読点は中央に強制配置
-            const dy = VERTICAL_SHIFT_CHARS.has(charCode)
+            const isKuten = (charCode === 0x3002 || charCode === 0x3001);
+            const dy = isKuten
               ? (lineY - boxHeight) + Math.floor((boxHeight - bitmap.rows) / 2)
               : (lineY - boxHeight) + computeBaselineOffset(boxHeight, lineSpacing) - glyph.bitmap_top;
+            if (isKuten) console.log("句読点 dy:", dy, "bitmap.rows:", bitmap.rows, "boxHeight:", boxHeight);
             const sourceData = bitmap.imagedata.data;
             ctx.fillStyle = "#000";
             for (let y = 0; y < bitmap.rows; y++) {
