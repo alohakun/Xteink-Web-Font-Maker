@@ -642,6 +642,7 @@ function renderPreviewText() {
         const sourceData = bitmap.imagedata.data;
         ctx.fillStyle = "#000";
 
+        if (charCode === 0x30FC) console.log("ー found! VERTICAL_ROTATE_CHARS.has:", VERTICAL_ROTATE_CHARS.has(charCode), "charCode type:", typeof charCode, "value:", charCode);
         if (VERTICAL_ROTATE_CHARS.has(charCode)) {
           // 「ー」などは90度回転
           console.log(`rotate: charCode=${charCode} char=${char} bitmap=${bitmap.width}x${bitmap.rows}`);
